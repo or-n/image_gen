@@ -21,6 +21,19 @@ fn with_corners(values: [_3<u8>; 4]) -> impl Fn(u32, u32) -> Rgb<u8> {
     }
 }
 
+fn with_corners_brightness_corrected(values: [_3<u8>; 4]) -> impl Fn(u32, u32) -> Rgb<u8> {
+    move |x, y| {
+        let ratio = _2([x, y]).zip(SIZE.decrement(), f32_ratio);
+        let real_values = values.map(|color| {
+            let f = |x| (x as u16) * (x as u16);
+            _3(color.0.map(f))
+        });
+        let color = ratio.0.interpolate(&real_values);
+        let back = color.0.map(|x| (x as f32).sqrt() as u8);
+        Rgb(back)
+    }
+}
+
 fn circle(r: u32, inside: _3<u8>, outside: _3<u8>) -> impl Fn(u32, u32) -> Rgb<u8> {
     move |x, y| {
         let r = 2 * r as i32;
@@ -51,6 +64,18 @@ fn main() {
     save_image("rybg", with_corners([r, y, b, g]));
     save_image("r01g", with_corners([r, black, white, g]));
     save_image("0yb1", with_corners([black, y, b, white]));
+    save_image(
+        "rybg_corrected",
+        with_corners_brightness_corrected([r, y, b, g]),
+    );
+    save_image(
+        "r01g_corrected",
+        with_corners_brightness_corrected([r, black, white, g]),
+    );
+    save_image(
+        "0yb1_corrected",
+        with_corners_brightness_corrected([black, y, b, white]),
+    );
     let end_time = Instant::now();
     println!("Done {:?}", end_time - start_time);
 }
